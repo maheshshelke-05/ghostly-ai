@@ -59,7 +59,7 @@ export default function Navbar() {
         <div className="flex justify-between items-center">
 
           {/* Logo */}
-          <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-2 group">
+          <Link to="/" className="flex items-center gap-2 group">
             <motion.span
               className="text-2xl"
               animate={{ y: [0, -3, 0] }}

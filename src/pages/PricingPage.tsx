@@ -1,10 +1,9 @@
 'use client';
 
 import { motion } from 'motion/react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { signOut } from '../lib/supabase';
-import { useNavigate } from 'react-router-dom';
 import { Check, X, Crown, MessageCircle, LogOut, Download } from 'lucide-react';
 
 const plans = [
@@ -80,37 +79,23 @@ export default function PricingPage() {
   const handleSignOut = async () => { await signOut(); navigate('/'); };
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Nav */}
-      <nav className="bg-white border-b border-slate-100 px-6 py-4 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <span className="text-2xl">👻</span>
-            <span className="text-xl font-display font-black tracking-tighter text-slate-900">
-              Ghostly<span className="text-orange-500">AI</span>
-            </span>
-          </Link>
-          <div className="flex items-center gap-3">
-            {user ? (
-              <>
-                <Link to="/dashboard" className="text-xs font-bold text-slate-400 hover:text-slate-700 transition-colors">Dashboard</Link>
-                <Link to="/profile" className="text-xs font-bold text-slate-400 hover:text-slate-700 transition-colors">Profile</Link>
-                <Link to="/pricing" className="text-xs font-bold text-orange-500 border-b-2 border-orange-500 pb-0.5">Pricing</Link>
-                <button onClick={handleSignOut} className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-red-500 transition-colors ml-2">
-                  <LogOut className="w-3.5 h-3.5" /> Logout
-                </button>
-              </>
-            ) : (
-              <>
-                <Link to="/#pricing" className="text-xs font-bold text-slate-400 hover:text-slate-700 transition-colors">Home</Link>
-                <Link to="/login" className="btn-primary !py-2 !px-5 !text-xs !rounded-full">Login</Link>
-              </>
-            )}
+    <div className="min-h-screen bg-slate-50">
+      {/* Show nav only for non-logged-in users (logged-in users have sidebar) */}
+      {!user && (
+        <nav className="bg-white border-b border-slate-100 px-6 py-4 sticky top-0 z-50">
+          <div className="max-w-6xl mx-auto flex items-center justify-between">
+            <Link to="/" className="flex items-center gap-2">
+              <span className="text-2xl">👻</span>
+              <span className="text-xl font-display font-black tracking-tighter text-slate-900">
+                Ghostly<span className="text-orange-500">AI</span>
+              </span>
+            </Link>
+            <Link to="/login" className="btn-primary !py-2 !px-5 !text-xs !rounded-full">Login</Link>
           </div>
-        </div>
-      </nav>
+        </nav>
+      )}
 
-      <div className="max-w-6xl mx-auto px-4 py-20">
+      <div className="max-w-6xl mx-auto px-4 py-16 md:py-20">
         {/* Header */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-5 py-2 bg-orange-50 text-orange-600 rounded-full border border-orange-100 mb-6">
@@ -135,7 +120,7 @@ export default function PricingPage() {
               whileHover={{ y: -6 }}
               className={`relative flex flex-col rounded-[36px] overflow-hidden border-2 ${
                 plan.highlight ? 'border-orange-400 shadow-2xl shadow-orange-500/15' :
-                plan.dark ? 'border-slate-800 bg-slate-950' : 'border-slate-100 bg-white shadow-sm'
+                (plan as any).dark ? 'border-slate-800 bg-slate-950' : 'border-slate-100 bg-white shadow-sm'
               }`}
             >
               {plan.highlight && (
@@ -146,28 +131,28 @@ export default function PricingPage() {
               <div className="p-8 flex flex-col flex-1">
                 <div className="flex items-center gap-3 mb-6">
                   <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl ${
-                    plan.dark ? 'bg-slate-800' : plan.highlight ? 'bg-orange-50' : 'bg-slate-50'
+                    (plan as any).dark ? 'bg-slate-800' : plan.highlight ? 'bg-orange-50' : 'bg-slate-50'
                   }`}>{plan.icon}</div>
                   <div>
-                    <h3 className={`text-lg font-display font-black ${plan.dark ? 'text-white' : 'text-slate-900'}`}>{plan.name}</h3>
-                    <p className={`text-xs font-medium ${plan.dark ? 'text-slate-400' : 'text-slate-400'}`}>{plan.desc}</p>
+                    <h3 className={`text-lg font-display font-black ${(plan as any).dark ? 'text-white' : 'text-slate-900'}`}>{plan.name}</h3>
+                    <p className="text-xs font-medium text-slate-400">{plan.desc}</p>
                   </div>
                 </div>
 
                 <div className="mb-8">
-                  <span className={`text-4xl font-display font-black ${plan.dark ? 'text-white' : 'text-slate-900'}`}>{plan.price}</span>
-                  <span className={`text-sm font-bold ml-2 ${plan.dark ? 'text-slate-500' : 'text-slate-400'}`}>/ {plan.period}</span>
+                  <span className={`text-4xl font-display font-black ${(plan as any).dark ? 'text-white' : 'text-slate-900'}`}>{plan.price}</span>
+                  <span className={`text-sm font-bold ml-2 ${(plan as any).dark ? 'text-slate-500' : 'text-slate-400'}`}>/ {plan.period}</span>
                 </div>
 
                 <div className="space-y-3 mb-8 flex-1">
                   {plan.features.map((f, fi) => (
                     <div key={fi} className="flex items-center gap-3">
                       {f.ok
-                        ? <Check className={`w-4 h-4 shrink-0 ${plan.highlight ? 'text-orange-500' : plan.dark ? 'text-purple-400' : 'text-green-500'}`} />
+                        ? <Check className={`w-4 h-4 shrink-0 ${plan.highlight ? 'text-orange-500' : (plan as any).dark ? 'text-purple-400' : 'text-green-500'}`} />
                         : <X className="w-4 h-4 shrink-0 text-slate-300" />
                       }
                       <span className={`text-sm font-medium ${
-                        plan.dark ? (f.ok ? 'text-slate-300' : 'text-slate-600') : (f.ok ? 'text-slate-700' : 'text-slate-400')
+                        (plan as any).dark ? (f.ok ? 'text-slate-300' : 'text-slate-600') : (f.ok ? 'text-slate-700' : 'text-slate-400')
                       }`}>{f.text}</span>
                     </div>
                   ))}
@@ -179,7 +164,7 @@ export default function PricingPage() {
                   rel="noreferrer"
                   className={`w-full py-3.5 rounded-2xl text-sm font-extrabold flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 ${
                     plan.highlight ? 'btn-primary' :
-                    plan.dark ? 'bg-purple-600 text-white hover:bg-purple-500' :
+                    (plan as any).dark ? 'bg-purple-600 text-white hover:bg-purple-500' :
                     'btn-secondary'
                   }`}
                 >
