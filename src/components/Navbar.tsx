@@ -77,12 +77,17 @@ export default function Navbar() {
               </a>
               {user ? (
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-50 rounded-full border border-orange-100">
-                    <User className="w-3.5 h-3.5 text-orange-500" />
+                  <Link to="/dashboard"
+                    className="flex items-center gap-2 px-3 py-1.5 bg-orange-50 rounded-full border border-orange-100 hover:bg-orange-100 transition-all">
+                    {user.user_metadata?.avatar_url ? (
+                      <img src={user.user_metadata.avatar_url} className="w-5 h-5 rounded-full" />
+                    ) : (
+                      <User className="w-3.5 h-3.5 text-orange-500" />
+                    )}
                     <span className="text-xs font-bold text-orange-600 max-w-[100px] truncate">
-                      {user.user_metadata?.full_name || user.email?.split('@')[0]}
+                      {user.user_metadata?.full_name?.split(' ')[0] || user.email?.split('@')[0]}
                     </span>
-                  </div>
+                  </Link>
                   <button onClick={handleSignOut}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-slate-500 hover:text-red-500 border border-slate-200 hover:border-red-200 transition-all">
                     <LogOut className="w-3.5 h-3.5" /> Logout

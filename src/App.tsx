@@ -25,6 +25,9 @@ import FAQ from './components/FAQ';
 import FloatingCTA from './components/FloatingCTA';
 import LoginPage from './pages/LoginPage';
 import AuthCallback from './pages/AuthCallback';
+import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
+import PricingPage from './pages/PricingPage';
 
 function HomePage() {
   return (
@@ -59,6 +62,9 @@ export default function App() {
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/pricing" element={<PricingPage />} />
           </Routes>
         </Layout>
       </SmoothScroll>

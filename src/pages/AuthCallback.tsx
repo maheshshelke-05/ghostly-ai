@@ -10,7 +10,7 @@ export default function AuthCallback() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate('/');
+      if (data.session) navigate('/dashboard');
       else navigate('/login');
     });
   }, [navigate]);
