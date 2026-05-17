@@ -1,0 +1,8 @@
+{
+  "name": "Ghostly AI - Stealth Copilot for Interviews",
+  "description": "Ghostly AI is the world's most powerful screen-share proof, stealth AI copilot for technical interviews. Real-time audio transcription and AI assistance, invisibly.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
