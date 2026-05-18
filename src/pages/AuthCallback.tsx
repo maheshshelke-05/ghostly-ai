@@ -10,7 +10,8 @@ export default function AuthCallback() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate('/dashboard');
+      // Always go to /app-login — it will send token to app and close tab
+      if (data.session) navigate('/app-login');
       else navigate('/login');
     });
   }, [navigate]);

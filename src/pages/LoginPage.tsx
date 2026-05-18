@@ -13,11 +13,18 @@ export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) navigate('/dashboard');
+    if (!loading && user) {
+      const fromApp = sessionStorage.getItem('from_app') === 'true';
+      navigate(fromApp ? '/app-login' : '/dashboard');
+    }
   }, [user, loading, navigate]);
 
   const handleGoogle = async () => {
     setGoogleLoading(true);
+    // Preserve from_app flag across OAuth redirect
+    if (sessionStorage.getItem('from_app') === 'true') {
+      sessionStorage.setItem('from_app', 'true');
+    }
     const error = await signInWithGoogle();
     if (error) { setErr(error.message); setGoogleLoading(false); }
   };

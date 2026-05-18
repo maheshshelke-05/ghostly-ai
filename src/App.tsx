@@ -28,6 +28,8 @@ import AuthCallback from './pages/AuthCallback';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import PricingPage from './pages/PricingPage';
+import AppLogin from './pages/AppLogin';
+import ElectronLogin from './pages/ElectronLogin';
 
 function HomePage() {
   return (
@@ -65,6 +67,8 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/app-login" element={<AppLogin />} />
+            <Route path="/electron-login" element={<ElectronLogin />} />
           </Routes>
         </Layout>
       </SmoothScroll>
