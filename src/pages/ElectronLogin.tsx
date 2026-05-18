@@ -4,17 +4,35 @@ import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { supabase } from '../lib/supabase';
 
+const CALLBACK_URL = 'http://127.0.0.1:7842/callback';
+
 export default function ElectronLogin() {
-  const [status, setStatus] = useState<'init' | 'ready' | 'loggingIn' | 'done' | 'error'>('init');
+  const [status, setStatus] = useState<'init' | 'ready' | 'loggingIn' | 'sending' | 'done' | 'error'>('init');
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const sendTokensToApp = async (accessToken: string, refreshToken: string) => {
+    setStatus('sending');
+    try {
+      const url = `${CALLBACK_URL}?access_token=${encodeURIComponent(accessToken)}&refresh_token=${encodeURIComponent(refreshToken)}`;
+      const res = await fetch(url, { mode: 'cors' });
+      if (res.ok) {
+        setStatus('done');
+      } else {
+        throw new Error('Server responded with ' + res.status);
+      }
+    } catch (e: any) {
+      setStatus('error');
+      setErrorMsg('App se connect nahi ho paya. App open hai? Error: ' + e.message);
+    }
+  };
 
   useEffect(() => {
-    // Sign out existing session for fresh login
+    // Sign out existing session so user always does fresh login
     supabase.auth.signOut().then(() => {
-      // Check if we're returning from Google OAuth (URL has access_token in hash)
+      // Check if returning from Google OAuth (hash has tokens)
       const hash = window.location.hash;
       if (hash && hash.includes('access_token')) {
-        // Supabase auto-processes this hash and fires onAuthStateChange
-        setStatus('loggingIn');
+        setStatus('loggingIn'); // will be handled by onAuthStateChange
       } else {
         setStatus('ready');
       }
@@ -23,19 +41,8 @@ export default function ElectronLogin() {
 
   useEffect(() => {
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if ((event === 'SIGNED_IN') && session) {
-        try {
-          // Store tokens in Supabase table so Electron app can fetch them
-          const { error } = await supabase.from('app_tokens').insert({
-            access_token: session.access_token,
-            refresh_token: session.refresh_token,
-          });
-          if (error) throw error;
-          setStatus('done');
-        } catch (e) {
-          console.error(e);
-          setStatus('error');
-        }
+      if (event === 'SIGNED_IN' && session) {
+        await sendTokensToApp(session.access_token, session.refresh_token);
       }
     });
     return () => listener.subscription.unsubscribe();
@@ -45,33 +52,29 @@ export default function ElectronLogin() {
     setStatus('loggingIn');
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/electron-login`,
-      },
+      options: { redirectTo: `${window.location.origin}/electron-login` },
     });
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#f8fafc' }}>
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm"
-      >
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
         <div className="bg-white rounded-[32px] border border-slate-100 shadow-2xl p-10 text-center">
-          <motion.div
-            className="text-5xl mb-5"
-            animate={{ y: [0, -6, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >👻</motion.div>
 
+          <motion.div className="text-5xl mb-5" animate={{ y: [0, -6, 0] }} transition={{ duration: 2, repeat: Infinity }}>
+            👻
+          </motion.div>
           <h1 className="text-xl font-black text-slate-900 mb-1">Ghostly AI</h1>
           <p className="text-xs text-slate-400 mb-8">App Login</p>
 
-          {status === 'init' && (
+          {(status === 'init' || status === 'loggingIn' || status === 'sending') && (
             <div className="flex flex-col items-center gap-3">
               <div className="w-7 h-7 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin" />
-              <p className="text-sm text-slate-400">Preparing...</p>
+              <p className="text-sm text-slate-400">
+                {status === 'init' && 'Preparing...'}
+                {status === 'loggingIn' && 'Logging in...'}
+                {status === 'sending' && 'Sending to app...'}
+              </p>
             </div>
           )}
 
@@ -102,30 +105,24 @@ export default function ElectronLogin() {
             </div>
           )}
 
-          {status === 'loggingIn' && (
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-7 h-7 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin" />
-              <p className="text-sm text-slate-400">Logging in...</p>
-            </div>
-          )}
-
           {status === 'done' && (
             <div className="flex flex-col items-center gap-3">
               <div className="text-4xl">✅</div>
               <p className="text-base font-bold text-green-600">Login Successful!</p>
-              <p className="text-sm text-slate-400">
-                Ghostly AI app unlock ho gaya.<br />Yeh tab band kar sakte ho.
-              </p>
+              <p className="text-sm text-slate-400">Ghostly AI app unlock ho gaya.<br />Yeh tab band kar sakte ho.</p>
             </div>
           )}
 
           {status === 'error' && (
             <div className="flex flex-col items-center gap-3">
               <div className="text-4xl">❌</div>
-              <p className="text-sm text-red-500">Kuch error aaya. Dobara try karo.</p>
-              <button onClick={() => setStatus('ready')} className="text-sm text-orange-500 underline">Try Again</button>
+              <p className="text-sm text-red-500 text-center">{errorMsg}</p>
+              <button onClick={() => setStatus('ready')} className="text-sm text-orange-500 underline cursor-pointer">
+                Try Again
+              </button>
             </div>
           )}
+
         </div>
       </motion.div>
     </div>
