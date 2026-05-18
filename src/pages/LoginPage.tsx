@@ -66,7 +66,7 @@ export default function LoginPage() {
     const token = otp.join('');
     if (token.length < 6) { setError('6-digit code enter karo'); return; }
     setLoading(true);
-    const { error } = await supabase.auth.verifyOtp({ email: email.trim(), token, type: 'signup' });
+    const { error } = await supabase.auth.verifyOtp({ email: email.trim(), token, type: 'email' });
     if (error) setError('Code galat hai ya expire ho gaya');
     else navigate('/dashboard');
     setLoading(false);
