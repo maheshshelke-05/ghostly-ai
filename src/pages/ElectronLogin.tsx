@@ -5,20 +5,37 @@ import { motion } from 'motion/react';
 import { supabase } from '../lib/supabase';
 
 export default function ElectronLogin() {
-  const [status, setStatus] = useState<'init' | 'ready' | 'loggingIn' | 'done'>('init');
+  const [status, setStatus] = useState<'init' | 'ready' | 'loggingIn' | 'done' | 'error'>('init');
 
   useEffect(() => {
-    // Sign out any existing session so user gets fresh login
-    supabase.auth.signOut().then(() => setStatus('ready'));
+    // Sign out existing session for fresh login
+    supabase.auth.signOut().then(() => {
+      // Check if we're returning from Google OAuth (URL has access_token in hash)
+      const hash = window.location.hash;
+      if (hash && hash.includes('access_token')) {
+        // Supabase auto-processes this hash and fires onAuthStateChange
+        setStatus('loggingIn');
+      } else {
+        setStatus('ready');
+      }
+    });
   }, []);
 
-  // After Google OAuth, Supabase redirects back here with session in URL hash
-  // Supabase JS auto-processes the hash and sets the session
   useEffect(() => {
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
-        setStatus('done');
-        // App is polling getSession() — it will detect this automatically
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if ((event === 'SIGNED_IN') && session) {
+        try {
+          // Store tokens in Supabase table so Electron app can fetch them
+          const { error } = await supabase.from('app_tokens').insert({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+          });
+          if (error) throw error;
+          setStatus('done');
+        } catch (e) {
+          console.error(e);
+          setStatus('error');
+        }
       }
     });
     return () => listener.subscription.unsubscribe();
@@ -42,7 +59,6 @@ export default function ElectronLogin() {
         className="w-full max-w-sm"
       >
         <div className="bg-white rounded-[32px] border border-slate-100 shadow-2xl p-10 text-center">
-
           <motion.div
             className="text-5xl mb-5"
             animate={{ y: [0, -6, 0] }}
@@ -50,17 +66,15 @@ export default function ElectronLogin() {
           >👻</motion.div>
 
           <h1 className="text-xl font-black text-slate-900 mb-1">Ghostly AI</h1>
-          <p className="text-xs text-slate-400 mb-8">App Login — Browser se login karo</p>
+          <p className="text-xs text-slate-400 mb-8">App Login</p>
 
-          {/* init — signing out */}
           {status === 'init' && (
             <div className="flex flex-col items-center gap-3">
               <div className="w-7 h-7 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin" />
-              <p className="text-sm text-slate-400">Preparing login...</p>
+              <p className="text-sm text-slate-400">Preparing...</p>
             </div>
           )}
 
-          {/* ready — show login button */}
           {status === 'ready' && (
             <div className="flex flex-col gap-4">
               <p className="text-sm text-slate-500">
@@ -68,7 +82,7 @@ export default function ElectronLogin() {
               </p>
               <button
                 onClick={handleGoogleLogin}
-                className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl font-bold text-sm transition-all hover:opacity-90"
+                className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl font-bold text-sm hover:opacity-90 transition-opacity"
                 style={{
                   background: 'linear-gradient(135deg, #eb9245, #d97706)',
                   color: '#fff',
@@ -88,26 +102,30 @@ export default function ElectronLogin() {
             </div>
           )}
 
-          {/* logging in */}
           {status === 'loggingIn' && (
             <div className="flex flex-col items-center gap-3">
               <div className="w-7 h-7 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin" />
-              <p className="text-sm text-slate-400">Google pe redirect ho raha hai...</p>
+              <p className="text-sm text-slate-400">Logging in...</p>
             </div>
           )}
 
-          {/* done */}
           {status === 'done' && (
             <div className="flex flex-col items-center gap-3">
               <div className="text-4xl">✅</div>
               <p className="text-base font-bold text-green-600">Login Successful!</p>
               <p className="text-sm text-slate-400">
-                Ghostly AI app automatically unlock ho gaya.<br />
-                Yeh tab band kar sakte ho.
+                Ghostly AI app unlock ho gaya.<br />Yeh tab band kar sakte ho.
               </p>
             </div>
           )}
 
+          {status === 'error' && (
+            <div className="flex flex-col items-center gap-3">
+              <div className="text-4xl">❌</div>
+              <p className="text-sm text-red-500">Kuch error aaya. Dobara try karo.</p>
+              <button onClick={() => setStatus('ready')} className="text-sm text-orange-500 underline">Try Again</button>
+            </div>
+          )}
         </div>
       </motion.div>
     </div>
