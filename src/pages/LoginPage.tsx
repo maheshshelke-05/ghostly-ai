@@ -18,15 +18,14 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const resetTo = (s: Screen) => {
+  const switchTo = (s: Screen) => {
     setScreen(s); setError('');
     setFullName(''); setPassword(''); setOtp(['','','','','','']);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    if (!email.trim() || !password.trim()) { setError('Email aur password required hai'); return; }
+    e.preventDefault(); setError('');
+    if (!email.trim() || !password) { setError('Email aur password required hai'); return; }
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     if (error) setError('Email ya password galat hai');
@@ -35,8 +34,7 @@ export default function LoginPage() {
   };
 
   const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+    e.preventDefault(); setError('');
     if (!fullName.trim()) { setError('Full name enter karo'); return; }
     if (!email.trim()) { setError('Email required hai'); return; }
     if (password.length < 6) { setError('Password min 6 characters hona chahiye'); return; }
@@ -45,8 +43,12 @@ export default function LoginPage() {
       email: email.trim(), password,
       options: { data: { full_name: fullName.trim() } },
     });
-    if (error) setError(error.message);
-    else setScreen('verify');
+    if (error) {
+      if (error.message.toLowerCase().includes('already')) setError('Yeh email already registered hai. Login karo.');
+      else setError(error.message);
+    } else {
+      setScreen('verify');
+    }
     setLoading(false);
   };
 
@@ -55,14 +57,12 @@ export default function LoginPage() {
     const next = [...otp]; next[i] = val.slice(-1); setOtp(next);
     if (val && i < 5) otpRefs.current[i + 1]?.focus();
   };
-
   const handleOtpKey = (i: number, e: React.KeyboardEvent) => {
     if (e.key === 'Backspace' && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus();
   };
 
   const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+    e.preventDefault(); setError('');
     const token = otp.join('');
     if (token.length < 6) { setError('6-digit code enter karo'); return; }
     setLoading(true);
@@ -72,11 +72,14 @@ export default function LoginPage() {
     setLoading(false);
   };
 
+  const btnCls = "w-full py-3 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity";
   const btnStyle = {
     background: loading ? 'rgba(235,146,69,0.4)' : 'linear-gradient(135deg, #eb9245, #d97706)',
-    color: '#fff' as const,
+    color: '#fff' as const, border: 'none' as const,
+    cursor: loading ? 'not-allowed' as const : 'pointer' as const,
     boxShadow: loading ? 'none' : '0 4px 20px rgba(235,146,69,0.35)',
   };
+  const Spin = () => <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>;
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-4 relative overflow-hidden">
@@ -86,19 +89,16 @@ export default function LoginPage() {
       <motion.div initial={{ opacity: 0, y: 20, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }} className="w-full max-w-sm relative z-10"
       >
-        {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 mb-6">
             <motion.span className="text-4xl" animate={{ y: [0, -5, 0] }} transition={{ duration: 2.5, repeat: Infinity }}>👻</motion.span>
-            <span className="text-3xl font-display font-black tracking-tighter text-slate-900">
-              Ghostly<span className="text-orange-500">AI</span>
-            </span>
+            <span className="text-3xl font-display font-black tracking-tighter text-slate-900">Ghostly<span className="text-orange-500">AI</span></span>
           </Link>
           <h1 className="text-2xl font-display font-black text-slate-900 mb-1">
-            {screen === 'verify' ? 'Verify Email 📧' : screen === 'login' ? 'Welcome back 👋' : 'Create Account 🚀'}
+            {screen === 'verify' ? 'Email Verify Karo 📧' : screen === 'signup' ? 'Account Banao 🚀' : 'Welcome Back 👋'}
           </h1>
           <p className="text-slate-500 font-medium text-sm">
-            {screen === 'verify' ? `Code bheja gaya: ${email}` : 'Email se login karo'}
+            {screen === 'verify' ? `6-digit code bheja gaya: ${email}` : 'Email se login karo'}
           </p>
         </div>
 
@@ -107,13 +107,13 @@ export default function LoginPage() {
 
             {/* LOGIN */}
             {screen === 'login' && (
-              <motion.div key="login" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
+              <motion.div key="login" initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 16 }} transition={{ duration: 0.18 }}>
                 <div className="flex gap-1 p-2" style={{ borderBottom: '1px solid #f1f5f9' }}>
                   {(['login', 'signup'] as const).map(m => (
-                    <button key={m} onClick={() => resetTo(m)}
-                      className="flex-1 py-2 rounded-xl text-sm font-bold transition-all"
-                      style={{ background: screen === m ? 'linear-gradient(135deg, #eb9245, #d97706)' : 'transparent', color: screen === m ? '#fff' : '#94a3b8', border: 'none', cursor: 'pointer' }}
-                    >{m === 'login' ? 'Login' : 'Sign Up'}</button>
+                    <button key={m} onClick={() => switchTo(m)} className="flex-1 py-2 rounded-xl text-sm font-bold transition-all"
+                      style={{ background: screen === m ? 'linear-gradient(135deg, #eb9245, #d97706)' : 'transparent', color: screen === m ? '#fff' : '#94a3b8', border: 'none', cursor: 'pointer' }}>
+                      {m === 'login' ? 'Login' : 'Sign Up'}
+                    </button>
                   ))}
                 </div>
                 <form onSubmit={handleLogin} className="p-6 flex flex-col gap-3">
@@ -122,10 +122,8 @@ export default function LoginPage() {
                   <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl text-sm font-medium outline-none border-2 border-slate-200 focus:border-orange-400 transition-colors" />
                   {error && <p className="text-xs font-semibold px-3 py-2 rounded-xl bg-red-50 border border-red-100 text-red-500">⚠️ {error}</p>}
-                  <button type="submit" disabled={loading}
-                    className="w-full py-3 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all hover:opacity-90"
-                    style={btnStyle}>
-                    {loading ? <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Loading...</> : 'Login'}
+                  <button type="submit" disabled={loading} className={btnCls} style={btnStyle}>
+                    {loading ? <><Spin /> Loading...</> : 'Login'}
                   </button>
                 </form>
               </motion.div>
@@ -133,13 +131,13 @@ export default function LoginPage() {
 
             {/* SIGNUP */}
             {screen === 'signup' && (
-              <motion.div key="signup" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <motion.div key="signup" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.18 }}>
                 <div className="flex gap-1 p-2" style={{ borderBottom: '1px solid #f1f5f9' }}>
                   {(['login', 'signup'] as const).map(m => (
-                    <button key={m} onClick={() => resetTo(m)}
-                      className="flex-1 py-2 rounded-xl text-sm font-bold transition-all"
-                      style={{ background: screen === m ? 'linear-gradient(135deg, #eb9245, #d97706)' : 'transparent', color: screen === m ? '#fff' : '#94a3b8', border: 'none', cursor: 'pointer' }}
-                    >{m === 'login' ? 'Login' : 'Sign Up'}</button>
+                    <button key={m} onClick={() => switchTo(m)} className="flex-1 py-2 rounded-xl text-sm font-bold transition-all"
+                      style={{ background: screen === m ? 'linear-gradient(135deg, #eb9245, #d97706)' : 'transparent', color: screen === m ? '#fff' : '#94a3b8', border: 'none', cursor: 'pointer' }}>
+                      {m === 'login' ? 'Login' : 'Sign Up'}
+                    </button>
                   ))}
                 </div>
                 <form onSubmit={handleSignup} className="p-6 flex flex-col gap-3">
@@ -150,10 +148,8 @@ export default function LoginPage() {
                   <input type="password" placeholder="Password (min 6 chars)" value={password} onChange={e => setPassword(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl text-sm font-medium outline-none border-2 border-slate-200 focus:border-orange-400 transition-colors" />
                   {error && <p className="text-xs font-semibold px-3 py-2 rounded-xl bg-red-50 border border-red-100 text-red-500">⚠️ {error}</p>}
-                  <button type="submit" disabled={loading}
-                    className="w-full py-3 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all hover:opacity-90"
-                    style={btnStyle}>
-                    {loading ? <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Loading...</> : 'Create Account & Send Code'}
+                  <button type="submit" disabled={loading} className={btnCls} style={btnStyle}>
+                    {loading ? <><Spin /> Loading...</> : 'Create Account → Send OTP'}
                   </button>
                 </form>
               </motion.div>
@@ -161,7 +157,7 @@ export default function LoginPage() {
 
             {/* OTP VERIFY */}
             {screen === 'verify' && (
-              <motion.div key="verify" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              <motion.div key="verify" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
                 <form onSubmit={handleVerify} className="p-6 flex flex-col gap-4">
                   <div className="flex gap-2 justify-center">
                     {otp.map((digit, i) => (
@@ -175,15 +171,11 @@ export default function LoginPage() {
                     ))}
                   </div>
                   {error && <p className="text-xs font-semibold px-3 py-2 rounded-xl bg-red-50 border border-red-100 text-red-500 text-center">⚠️ {error}</p>}
-                  <button type="submit" disabled={loading}
-                    className="w-full py-3 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all hover:opacity-90"
-                    style={btnStyle}>
-                    {loading ? <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Verifying...</> : 'Verify & Login'}
+                  <button type="submit" disabled={loading} className={btnCls} style={btnStyle}>
+                    {loading ? <><Spin /> Verifying...</> : 'Verify & Login ✓'}
                   </button>
-                  <button type="button" onClick={() => resetTo('signup')}
-                    className="text-sm text-slate-400 text-center hover:text-slate-600 transition-colors"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                    ← Wapas jao
+                  <button type="button" onClick={() => switchTo('signup')} className="text-sm text-center text-slate-400 hover:text-slate-600 transition-colors" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                    ← Wapas
                   </button>
                 </form>
               </motion.div>
